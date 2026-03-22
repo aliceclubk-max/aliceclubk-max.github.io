@@ -1,0 +1,471 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>슈의 한약공장</title>
+  <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <style>
+    body { margin: 0; padding: 0; background: #5E1760; }
+  </style>
+</head>
+<body>
+  <div id="root"></div>
+  <script type="text/babel">
+const { useState, useCallback } = React;
+
+const RECIPES = [
+  { name: "소시호탕", ingredients: ["시호","황금","반하","생강","인삼","대조","감초"], hint: "和解少陽의 대표방제", category: "화해제" },
+  { name: "호금청담탕", ingredients: ["청호","황금","죽여","지각","진피","반하","복령","감초","청대","활석"], hint: "淸膽利濕·和胃化痰", category: "화해제" },
+  { name: "시호가용골모려탕", ingredients: ["시호","황금","반하","생강","인삼","대조","대황","계지","복령","용골","모려"], hint: "和解少陽·通陽泄熱·重鎭安神", category: "화해제" },
+  { name: "사역산", ingredients: ["시호","작약","지실","감초"], hint: "透邪解鬱·疏肝理氣", category: "화해제" },
+  { name: "소요산", ingredients: ["시호","당귀","백작","백출","복령","생강","박하","감초"], hint: "疏肝解鬱·養血健脾", category: "화해제" },
+  { name: "통사요방", ingredients: ["백출","백작약","진피","방풍"], hint: "補脾柔肝·祛濕止瀉 (백출작약산)", category: "화해제" },
+  { name: "반하사심탕", ingredients: ["반하","건강","황금","황련","인삼","대조","감초"], hint: "平調寒熱·散結消痞", category: "화해제" },
+  { name: "생강사심탕", ingredients: ["반하","건강","황금","황련","인삼","대조","감초","생강"], hint: "和胃降逆·宣散水氣", category: "화해제" },
+  { name: "감초사심탕", ingredients: ["반하","건강","황금","황련","대조","감초"], hint: "緩中降逆·泄痞除煩", category: "화해제" },
+  { name: "황련탕", ingredients: ["반하","건강","황련","인삼","감초","대조","계지"], hint: "淸上溫下·和胃降逆", category: "화해제" },
+  { name: "절학칠보음", ingredients: ["상산","빈랑","초과","후박","진피","청피","감초"], hint: "燥濕祛痰·理氣截瘧", category: "화해제" },
+  { name: "청비음", ingredients: ["시호","황금","초과","반하","청피","후박","백출","복령","감초","생강"], hint: "和解淸熱·燥濕化痰·行氣運脾", category: "화해제" },
+  { name: "시호달원음", ingredients: ["시호","황금","지각","길경","후박","초과","청피","빈랑","하경","감초"], hint: "透達膜原·祛濕化痰", category: "화해제" },
+  { name: "백호탕", ingredients: ["지모","석고","감초","갱미"], hint: "淸熱生津 / 大汗大熱大渴脈洪大", category: "청열제" },
+  { name: "죽엽석고탕", ingredients: ["죽엽","석고","인삼","맥문동","반하","감초","갱미"], hint: "淸熱生津·益氣和胃", category: "청열제" },
+  { name: "치자시탕", ingredients: ["치자","향시"], hint: "淸宣鬱熱·除烦止躁", category: "청열제" },
+  { name: "청영탕", ingredients: ["서각","맥문동","생지황","현삼","금은화","연교","황련","죽엽","단삼"], hint: "淸營解毒·透熱養陰", category: "청열제" },
+  { name: "서각지황탕", ingredients: ["서각","생지황","작약","목단피"], hint: "淸熱解毒·凉血散瘀", category: "청열제" },
+  { name: "황련해독탕", ingredients: ["황련","황금","황백","치자"], hint: "瀉火解毒 / 三焦火熱", category: "청열제" },
+  { name: "조위승기탕", ingredients: ["대황","망초","감초"], hint: "緩下熱結 / 결독 흉만 복만", category: "하제" },
+  { name: "삼황사심탕", ingredients: ["대황","황련","황금"], hint: "瀉火通便 / 심번 심하비", category: "하제" },
+  { name: "계지탕", ingredients: ["계지","작약","생강","대조","감초"], hint: "解肌發表·調和營衛 / 두통 발열 한출 오풍", category: "해표제" },
+  { name: "마황탕", ingredients: ["마황","계지","행인","감초"], hint: "發汗解表·宣肺平喘 / 무한이천", category: "해표제" },
+  { name: "방풍통성산", ingredients: ["마황","형개","방풍","박하","생강","당귀","천궁","백작약","연교","치자","대황","망초","활석","석고","황금","길경","백출","감초"], hint: "疏風解表·瀉熱通便 / 표리구실", category: "해표제" },
+  { name: "영계출감탕", ingredients: ["복령","계지","백출","감초"], hint: "溫化痰飮·健脾利濕 / 심하계 기칙두현", category: "이수제" },
+  { name: "이중탕", ingredients: ["인삼","백출","건강","감초"], hint: "溫中祛寒·補氣健脾", category: "온리제" },
+  { name: "궁귀교애탕", ingredients: ["건지황","작약","당귀","애엽","천궁","아교","감초"], hint: "養血止血·調经安胎", category: "보혈제" },
+  { name: "혈부축어탕", ingredients: ["도인","홍화","생지황","당귀","우슬","적작약","지각","길경","천궁","시호","감초"], hint: "活血祛瘀·行氣止痛", category: "이혈제" },
+];
+
+const ALL_HERBS_KR = [
+  "시호","황금","반하","생강","인삼","대조","감초","작약","지실",
+  "당귀","백작","백출","복령","박하","진피","방풍","건강","황련",
+  "지모","석고","갱미","서각","생지황","목단피","맥문동","현삼",
+  "금은화","연교","죽엽","단삼","치자","향시","상산","빈랑","초과",
+  "후박","청피","청호","죽여","지각","청대","활석","길경","하경",
+  "대황","계지","용골","모려","마황","행인","창출","천궁","아교",
+  "애엽","건지황","망초","형개","황백","적작약","도인","홍화",
+  "우슬","백작약","백선피","백지","구기자","의이인","상백피",
+  "숙지황","황기","목통","차전자","내복자","백자인","천마","소목",
+  "산약","오미자","세신","부자","택사","승마","갈근",
+];
+
+const HERB_COLORS = [
+  "#6B4226","#2E7D32","#BF8C00","#A0522D","#4A6741",
+  "#8B6914","#5E8C31","#C0652A","#6B8E6B","#9E6B6B",
+  "#7B3F00","#6B7B00","#7CAF2E","#CC8844","#C4A76C",
+  "#9E9A5A","#D4A017","#D47040","#6BBF6B","#D4B896",
+];
+
+function getHerbColor(h) {
+  let x = 0;
+  for (let i = 0; i < h.length; i++) x = h.charCodeAt(i) + ((x << 5) - x);
+  return HERB_COLORS[Math.abs(x) % HERB_COLORS.length];
+}
+
+function shuffleArray(arr) {
+  const a = [...arr];
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
+function Character({ face = "neutral", speech = "", shake = false }) {
+  const FACES = {
+    neutral: { eyes: "● ●", mouth: "ㅡ", blush: false, skin: "#FFE4B5" },
+    happy: { eyes: "◠ ◠", mouth: "◡", blush: true, skin: "#FFE4B5" },
+    excited: { eyes: "★ ★", mouth: "▽", blush: true, skin: "#FFE4B5" },
+    sad: { eyes: "╥ ╥", mouth: "︵", blush: false, skin: "#FFE4B5" },
+    sick: { eyes: "✕ ✕", mouth: "﹏", blush: false, skin: "#D8D8B8" },
+    thinking: { eyes: "◑ ◐", mouth: "～", blush: false, skin: "#FFE4B5" },
+    love: { eyes: "♥ ♥", mouth: "◡", blush: true, skin: "#FFE4B5" },
+  };
+  const f = FACES[face] || FACES.neutral;
+  return (
+    <div style={{ display:"flex", flexDirection:"column", alignItems:"center", position:"relative",
+      animation: shake ? "charShake .4s ease-in-out 3" : "charBounce 3s ease-in-out infinite" }}>
+      {speech && (
+        <div style={{ background:"white", borderRadius:20, padding:"14px 18px",
+          border:"3px solid #444", position:"relative", marginBottom:10,
+          maxWidth:260, textAlign:"center", fontSize:16, fontWeight:700,
+          color:"#333", lineHeight:1.5, animation:"fadeInUp .3s ease-out" }}>
+          {speech.split("\n").map((line, i) => (
+            <span key={i}>{i > 0 && <br />}{line}</span>
+          ))}
+          <div style={{ position:"absolute", bottom:-12, left:"50%", transform:"translateX(-50%)",
+            width:0, height:0, borderLeft:"11px solid transparent", borderRight:"11px solid transparent", borderTop:"11px solid #444" }}/>
+          <div style={{ position:"absolute", bottom:-8, left:"50%", transform:"translateX(-50%)",
+            width:0, height:0, borderLeft:"9px solid transparent", borderRight:"9px solid transparent", borderTop:"9px solid white" }}/>
+        </div>
+      )}
+      <div style={{ position:"relative" }}>
+        <div style={{ background:"#C62828", borderRadius:"11px 11px 3px 3px", padding:"3px 12px",
+          marginBottom:-4, zIndex:2, position:"relative", textAlign:"center",
+          fontSize:14, color:"white", fontWeight:900, border:"2px solid #8E0000", letterSpacing:3 }}>환자</div>
+        <div style={{ width:110, height:110, borderRadius:"50%", background:f.skin,
+          border:"4px solid #C9A96E", display:"flex", flexDirection:"column",
+          alignItems:"center", justifyContent:"center", position:"relative",
+          boxShadow:"inset 0 -5px 10px rgba(0,0,0,.1)" }}>
+          <div style={{ fontSize:22, letterSpacing:8, marginBottom:2, marginLeft:8 }}>{f.eyes}</div>
+          <div style={{ width:26, height:26, borderRadius:"50%", background:"#FF8C42",
+            position:"absolute", top:"47%", left:"50%", transform:"translate(-50%,-50%)" }}/>
+          <div style={{ fontSize:24, marginTop:16, position:"relative", zIndex:1 }}>{f.mouth}</div>
+          {f.blush && <>
+            <div style={{ position:"absolute", left:8, top:"56%", width:18, height:11, borderRadius:"50%", background:"rgba(255,100,100,.4)" }}/>
+            <div style={{ position:"absolute", right:8, top:"56%", width:18, height:11, borderRadius:"50%", background:"rgba(255,100,100,.4)" }}/>
+          </>}
+        </div>
+        <div style={{ width:70, height:50, background:"#2E7D32", borderRadius:"8px 8px 22px 22px",
+          margin:"-5px auto 0", border:"3px solid #1B5E20", position:"relative" }}>
+          <div style={{ position:"absolute", top:5, left:"50%", transform:"translateX(-50%)",
+            width:14, height:14, borderRadius:"50%", background:"#DC143C", border:"2px solid #8B0000" }}/>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function Pot({ herbs, wobble }) {
+  return (
+    <div style={{ position:"relative", width:260, height:190,
+      animation: wobble ? "potWobble .3s ease-in-out" : "none" }}>
+      <div style={{ position:"absolute", bottom:0, left:8, right:8, height:135,
+        background:"linear-gradient(160deg, #f8f8f4, #e0ddd5)", borderRadius:"10px 10px 48% 48%",
+        border:"4px solid #aaa", boxShadow:"inset 0 -20px 30px rgba(0,0,0,.06), 4px 4px 10px rgba(0,0,0,.15)",
+        overflow:"hidden" }}>
+        {herbs.length > 0 && (
+          <div style={{ position:"absolute", bottom:0, left:0, right:0,
+            height:`${Math.min(90, 18 + herbs.length * 7)}%`,
+            background:"linear-gradient(180deg, rgba(139,90,43,.25) 0%, rgba(101,67,33,.45) 50%, rgba(80,50,20,.65) 100%)",
+            borderRadius:"0 0 45% 45%", transition:"height .3s ease" }}/>
+        )}
+        <div style={{ display:"flex", flexWrap:"wrap", justifyContent:"center", alignItems:"center",
+          padding:8, gap:3, height:"100%", alignContent:"center", position:"relative", zIndex:1 }}>
+          {herbs.map((h,i) => (
+            <div key={i} style={{ background:getHerbColor(h), borderRadius:7, padding:"3px 7px",
+              fontSize:12, color:"white", fontWeight:700, textShadow:"0 1px 2px rgba(0,0,0,.5)",
+              animation:"herbDrop .4s ease-out", boxShadow:"1px 1px 3px rgba(0,0,0,.3)" }}>{h}</div>
+          ))}
+        </div>
+      </div>
+      {herbs.length > 0 && <>
+        <div style={{ position:"absolute", top:14, left:"50%", transform:"translateX(-50%)",
+          width:50, height:30, borderRadius:"50%", background:"rgba(255,255,255,.25)",
+          filter:"blur(5px)", animation:"steam 2s ease-in-out infinite" }}/>
+        <div style={{ position:"absolute", top:5, left:"40%", transform:"translateX(-50%)",
+          width:30, height:20, borderRadius:"50%", background:"rgba(255,255,255,.15)",
+          filter:"blur(4px)", animation:"steam 2s ease-in-out infinite .6s" }}/>
+      </>}
+    </div>
+  );
+}
+
+const CATEGORIES = ["전체","화해제","청열제","해표제","하제","온리제","이수제","보혈제","이혈제"];
+
+function HerbalMedicineGame() {
+  const [gameState, setGameState] = useState("menu");
+  const [currentRecipe, setCurrentRecipe] = useState(null);
+  const [selectedHerbs, setSelectedHerbs] = useState([]);
+  const [availableHerbs, setAvailableHerbs] = useState([]);
+  const [score, setScore] = useState(0);
+  const [round, setRound] = useState(0);
+  const [totalRounds, setTotalRounds] = useState(5);
+  const [face, setFace] = useState("neutral");
+  const [speech, setSpeech] = useState("");
+  const [shake, setShake] = useState(false);
+  const [wobble, setWobble] = useState(false);
+  const [showResult, setShowResult] = useState(false);
+  const [resultCorrect, setResultCorrect] = useState(false);
+  const [hintUsed, setHintUsed] = useState(false);
+  const [showHint, setShowHint] = useState(false);
+  const [usedRecipes, setUsedRecipes] = useState([]);
+  const [combo, setCombo] = useState(0);
+  const [difficulty, setDifficulty] = useState("normal");
+  const [selectedCategory, setSelectedCategory] = useState("전체");
+  const [correctCount, setCorrectCount] = useState(0);
+
+  const getPool = (cat) => cat === "전체" ? RECIPES : RECIPES.filter(r => r.category === cat);
+  const catCount = (cat) => getPool(cat).length;
+
+  const startGame = (diff) => {
+    const pool = getPool(selectedCategory);
+    if (!pool.length) return;
+    setDifficulty(diff);
+    setScore(0); setRound(0); setCombo(0); setCorrectCount(0); setUsedRecipes([]);
+    const mr = diff === "easy" ? 3 : diff === "hard" ? Math.min(pool.length, 10) : Math.min(pool.length, 5);
+    setTotalRounds(mr);
+    setGameState("playing");
+    nextRound([], diff, mr);
+  };
+
+  const nextRound = useCallback((used, diff) => {
+    const pool = getPool(selectedCategory).filter(r => !used.includes(r.name));
+    if (!pool.length) { setGameState("finished"); return; }
+    const recipe = pool[Math.floor(Math.random() * pool.length)];
+    setCurrentRecipe(recipe);
+    setSelectedHerbs([]); setShowResult(false); setResultCorrect(false);
+    setHintUsed(false); setShowHint(false);
+    setFace("thinking");
+    setSpeech("'" + recipe.name + "'을(를)\n만들어 보시오!");
+    const d = diff || difficulty;
+    const dc = d === "easy" ? 4 : d === "hard" ? 16 : 8;
+    const dist = shuffleArray(ALL_HERBS_KR.filter(h => !recipe.ingredients.includes(h))).slice(0, dc);
+    setAvailableHerbs(shuffleArray([...recipe.ingredients, ...dist]));
+    setUsedRecipes(prev => [...prev, recipe.name]);
+    setRound(prev => prev + 1);
+  }, [difficulty, selectedCategory]);
+
+  const toggleHerb = (herb) => {
+    if (showResult) return;
+    setWobble(true); setTimeout(() => setWobble(false), 300);
+    setSelectedHerbs(prev => prev.includes(herb) ? prev.filter(h => h !== herb) : [...prev, herb]);
+  };
+
+  const submitAnswer = () => {
+    if (!currentRecipe) return;
+    const correct = currentRecipe.ingredients;
+    const ok = correct.length === selectedHerbs.length && correct.every(h => selectedHerbs.includes(h));
+    setShowResult(true); setResultCorrect(ok);
+    if (ok) {
+      const bonus = hintUsed ? 5 : 10;
+      const cb = combo * 2;
+      setScore(p => p + bonus + cb); setCombo(p => p + 1); setCorrectCount(p => p + 1);
+      setFace("excited");
+      const msgs = ["훌륭하오!\n명의의 자질이 보이는구려!","오호! 완벽한 처방이로다!",
+        "대단하오!\n이 방제를 꿰뚫고 있구려!","감탄스럽도다!\n정확한 배오이오!",
+        "허허, 제법이구만!\n스승이 기쁘도다!"];
+      setSpeech(msgs[Math.floor(Math.random()*msgs.length)] +
+        (cb > 0 ? "\n(+" + (bonus+cb) + "점 🔥" + (combo+1) + "콤보!)" : "\n(+" + bonus + "점)"));
+    } else {
+      setCombo(0); setFace("sick"); setShake(true);
+      setTimeout(() => setShake(false), 1200);
+      const wrong = selectedHerbs.filter(h => !correct.includes(h));
+      const missing = correct.filter(h => !selectedHerbs.includes(h));
+      let msg = "으으윽... 이게 무슨 약이야!\n";
+      if (wrong.length) msg += "❌ " + wrong.join(", ") + " 빼시오!\n";
+      if (missing.length) msg += "⭕ " + missing.join(", ") + " 빠졌소!";
+      setSpeech(msg);
+    }
+  };
+
+  const handleNext = () => {
+    if (round >= totalRounds) setGameState("finished");
+    else nextRound(usedRecipes);
+  };
+
+  const useHint = () => {
+    if (!currentRecipe || hintUsed) return;
+    setHintUsed(true); setShowHint(true); setFace("thinking");
+    setSpeech("💡 " + currentRecipe.hint + "\n(약재 " + currentRecipe.ingredients.length + "가지)");
+  };
+
+  return (
+    <div style={{ minHeight:"100vh", width:"100%",
+      background:"repeating-linear-gradient(45deg,#6A1B6A 0,#6A1B6A 28px,#5E1760 28px,#5E1760 56px)",
+      fontFamily:"'Noto Sans KR','Malgun Gothic',sans-serif",
+      display:"flex", justifyContent:"center", alignItems:"center", padding:16, boxSizing: "border-box" }}>
+      <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;700;900&display=swap');
+        @keyframes charShake{0%,100%{transform:translateX(0)}25%{transform:translateX(-10px) rotate(-6deg)}75%{transform:translateX(10px) rotate(6deg)}}
+        @keyframes charBounce{0%,100%{transform:translateY(0)}50%{transform:translateY(-5px)}}
+        @keyframes potWobble{0%,100%{transform:rotate(0)}25%{transform:rotate(-3deg)}75%{transform:rotate(3deg)}}
+        @keyframes herbDrop{0%{transform:translateY(-20px);opacity:0}100%{transform:translateY(0);opacity:1}}
+        @keyframes steam{0%,100%{opacity:0;transform:translateX(-50%) translateY(0)}50%{opacity:.6;transform:translateX(-50%) translateY(-16px) scale(1.3)}}
+        @keyframes fadeInUp{0%{opacity:0;transform:translateY(12px)}100%{opacity:1;transform:translateY(0)}}
+        @keyframes pulse{0%,100%{transform:scale(1)}50%{transform:scale(1.04)}}
+        @keyframes slideIn{0%{opacity:0;transform:translateY(25px)}100%{opacity:1;transform:translateY(0)}}
+        @keyframes titleBounce{0%,100%{transform:translateY(0) rotate(-1deg)}50%{transform:translateY(-6px) rotate(1deg)}}
+        .hb{transition:all .12s ease;cursor:pointer;user-select:none;-webkit-tap-highlight-color:transparent}
+        .hb:hover{transform:scale(1.07);filter:brightness(1.08)}.hb:active{transform:scale(.95)}
+        .ab{transition:all .15s ease;cursor:pointer;-webkit-tap-highlight-color:transparent}
+        .ab:hover{transform:translateY(-2px);box-shadow:0 6px 20px rgba(0,0,0,.3)}.ab:active{transform:translateY(0)}
+        .cb{transition:all .12s ease;cursor:pointer;-webkit-tap-highlight-color:transparent}.cb:hover{filter:brightness(1.15)}
+      `}</style>
+      {gameState === "menu" && (
+        <div style={{ background:"rgba(0,0,0,.35)", borderRadius:24, padding:"32px 28px",
+          display:"flex", flexDirection:"column", alignItems:"center", gap:18,
+          maxWidth:640, width:"100%", animation:"slideIn .5s ease-out" }}>
+          <div style={{ background:"linear-gradient(135deg,#1B5E20,#0D3B12)",
+            padding:"14px 36px", borderRadius:10, border:"3px solid #0A2E0E",
+            animation:"titleBounce 3s ease-in-out infinite", boxShadow:"4px 4px 0 rgba(0,0,0,.3)" }}>
+            <div style={{ color:"#FFD700", fontSize:32, fontWeight:900, textShadow:"2px 2px 0 #000", letterSpacing:3 }}>
+              🏥 슈의 한약공장 🏥
+            </div>
+          </div>
+          <Character face="happy" speech={"어서 오시오!\n한약을 만들어주시오!"} />
+          <div style={{ background:"rgba(255,255,255,.08)", borderRadius:14, padding:18, width:"100%", textAlign:"center", boxSizing: "border-box" }}>
+            <div style={{ color:"#FFD700", fontSize:17, fontWeight:700, marginBottom:8 }}>방제의 구성약물을 맞추시오!</div>
+            <div style={{ color:"#ccc", fontSize:14, lineHeight:1.7 }}>
+              방제명을 보고 올바른 약재를 선택하세요.<br/>정확하면 점수 획득! 틀리면 환자가 고통받습니다...
+            </div>
+          </div>
+          <div style={{ width:"100%" }}>
+            <div style={{ color:"#FFD700", fontSize:15, fontWeight:700, marginBottom:8, textAlign:"center" }}>📚 출제 범위</div>
+            <div style={{ display:"flex", flexWrap:"wrap", gap:6, justifyContent:"center" }}>
+              {CATEGORIES.map(cat => (
+                <button key={cat} className="cb" onClick={() => setSelectedCategory(cat)}
+                  style={{ background: selectedCategory===cat ? "#FFD700" : "rgba(255,255,255,.1)",
+                    color: selectedCategory===cat ? "#333" : "#ddd",
+                    border:"2px solid "+(selectedCategory===cat ? "#C9A200" : "rgba(255,255,255,.12)"),
+                    borderRadius:9, padding:"7px 14px", fontSize:14, fontWeight:700, fontFamily:"inherit" }}>
+                  {cat}({catCount(cat)})
+                </button>
+              ))}
+            </div>
+          </div>
+          <div style={{ display:"flex", flexDirection:"column", gap:10, width:"100%" }}>
+            {[
+              { d:"easy", label:"🌱 초급 (3문제, 약재 적음)", color:"#388E3C" },
+              { d:"normal", label:"🌿 중급 (5문제)", color:"#E65100" },
+              { d:"hard", label:"🔥 고급 (10문제, 약재 많음)", color:"#C62828" },
+            ].map(({d,label,color}) => (
+              <button key={d} className="ab" onClick={() => startGame(d)}
+                disabled={!catCount(selectedCategory)}
+                style={{ background:color, color:"white", border:"3px solid rgba(0,0,0,.2)",
+                  borderRadius:12, padding:"16px 20px", fontSize:18, fontWeight:700,
+                  fontFamily:"inherit", boxShadow:"0 4px 10px rgba(0,0,0,.3)",
+                  opacity:catCount(selectedCategory)?1:.4 }}>{label}</button>
+            ))}
+          </div>
+        </div>
+      )}
+      {gameState === "playing" && currentRecipe && (
+        <div style={{ maxWidth:720, width:"100%", display:"flex", flexDirection:"column",
+          alignItems:"center", gap:12, animation:"slideIn .3s ease-out" }}>
+          <div style={{ display:"flex", justifyContent:"space-between", width:"100%", alignItems:"center", padding:"0 4px", boxSizing: "border-box" }}>
+            <div style={{ background:"rgba(0,0,0,.4)", borderRadius:10, padding:"7px 16px", color:"#FFD700", fontWeight:700, fontSize:16 }}>
+              ⭐{score} {combo>1 && <span style={{color:"#FF6B6B"}}>🔥{combo}</span>}
+            </div>
+            <div style={{ background:"linear-gradient(135deg,#1B5E20,#0D3B12)",
+              borderRadius:10, padding:"7px 18px", border:"2px solid #0A2E0E", textAlign:"center" }}>
+              <span style={{ color:"#FFD700", fontWeight:900, fontSize:20 }}>{currentRecipe.name}</span>
+              <span style={{ color:"#88cc88", fontSize:13, marginLeft:6 }}>[{currentRecipe.category}]</span>
+            </div>
+            <div style={{ background:"rgba(0,0,0,.4)", borderRadius:10, padding:"7px 16px", color:"white", fontWeight:700, fontSize:16 }}>
+              {round}/{totalRounds}
+            </div>
+          </div>
+          <div style={{ display:"flex", alignItems:"flex-end", justifyContent:"center", gap:24, width:"100%", minHeight:260 }}>
+            <Character face={face} speech={speech} shake={shake} />
+            <Pot herbs={selectedHerbs} wobble={wobble} />
+          </div>
+          <div style={{ background:"rgba(0,0,0,.3)", borderRadius:8, padding:"5px 18px", fontWeight:700, fontSize:15,
+            color: selectedHerbs.length===currentRecipe.ingredients.length ? "#4CFF4C" :
+              selectedHerbs.length>currentRecipe.ingredients.length ? "#FF6B6B" : "white" }}>
+            선택: {selectedHerbs.length}개
+            {showHint && <span style={{color:"#FFD700"}}> / 정답: {currentRecipe.ingredients.length}개</span>}
+          </div>
+          <div style={{ background:"rgba(0,0,0,.2)", borderRadius:16, padding:14, width:"100%", boxSizing: "border-box" }}>
+            <div style={{ display:"flex", flexWrap:"wrap", gap:7, justifyContent:"center" }}>
+              {availableHerbs.map(herb => {
+                const sel = selectedHerbs.includes(herb);
+                const isOk = showResult && currentRecipe.ingredients.includes(herb);
+                const isWr = showResult && sel && !currentRecipe.ingredients.includes(herb);
+                const isMs = showResult && !sel && currentRecipe.ingredients.includes(herb);
+                let bg="#D4880F", bd="#A66800";
+                if(sel&&!showResult){bg="#2E7D32";bd="#1B5E20"}
+                if(showResult&&isOk&&sel){bg="#2E7D32";bd="#1B5E20"}
+                if(isWr){bg="#C62828";bd="#8E0000"}
+                if(isMs){bg="#E65100";bd="#BF360C"}
+                return (
+                  <button key={herb} className="hb" onClick={()=>toggleHerb(herb)} disabled={showResult}
+                    style={{ background:bg, border:`3px solid ${bd}`, borderRadius:10, padding:"10px 16px",
+                      color:"white", fontWeight:800, fontSize:17, fontFamily:"inherit", minWidth:56,
+                      boxShadow:sel?"inset 0 2px 5px rgba(0,0,0,.3)":"0 3px 0 rgba(0,0,0,.2)",
+                      textShadow:"1px 1px 0 rgba(0,0,0,.3)",
+                      opacity:showResult&&!isOk&&!isWr&&!isMs?.42:1, position:"relative" }}>
+                    {herb}
+                    {isMs&&<div style={{ position:"absolute", top:-7, right:-7, background:"#E65100",
+                      color:"white", borderRadius:"50%", width:20, height:20, fontSize:12, fontWeight:900,
+                      display:"flex", alignItems:"center", justifyContent:"center", border:"2px solid white" }}>!</div>}
+                    {isWr&&<div style={{ position:"absolute", top:-7, right:-7, background:"#C62828",
+                      color:"white", borderRadius:"50%", width:20, height:20, fontSize:12, fontWeight:900,
+                      display:"flex", alignItems:"center", justifyContent:"center", border:"2px solid white" }}>✕</div>}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+          <div style={{ display:"flex", gap:10, width:"100%", boxSizing: "border-box" }}>
+            {!showResult ? <>
+              <button className="ab" onClick={useHint} disabled={hintUsed}
+                style={{ flex:1, background:hintUsed?"#555":"#7B1FA2", color:"white",
+                  border:"3px solid rgba(0,0,0,.2)", borderRadius:12, padding:"14px", fontSize:17,
+                  fontWeight:700, fontFamily:"inherit", opacity:hintUsed?.5:1,
+                  boxShadow:"0 4px 10px rgba(0,0,0,.3)" }}>
+                💡 힌트{hintUsed?" (사용됨)":""}
+              </button>
+              <button className="ab" onClick={submitAnswer} disabled={!selectedHerbs.length}
+                style={{ flex:2, background:!selectedHerbs.length?"#555":"linear-gradient(135deg,#E65100,#BF360C)",
+                  color:"white", border:"3px solid rgba(0,0,0,.2)", borderRadius:12, padding:"14px",
+                  fontSize:20, fontWeight:900, fontFamily:"inherit",
+                  boxShadow:"0 4px 10px rgba(0,0,0,.3)", opacity:selectedHerbs.length?1:.5 }}>
+                🔥 달이기!
+              </button>
+            </> : (
+              <button className="ab" onClick={handleNext}
+                style={{ flex:1, background:resultCorrect?"linear-gradient(135deg,#2E7D32,#1B5E20)":"linear-gradient(135deg,#E65100,#BF360C)",
+                  color:"white", border:"3px solid rgba(0,0,0,.2)", borderRadius:12, padding:"16px",
+                  fontSize:20, fontWeight:900, fontFamily:"inherit", boxShadow:"0 4px 10px rgba(0,0,0,.3)",
+                  animation:"pulse 1s ease-in-out infinite" }}>
+                {round>=totalRounds?"🏆 결과 보기":"▶ 다음 문제"}
+              </button>
+            )}
+          </div>
+        </div>
+      )}
+      {gameState === "finished" && (
+        <div style={{ background:"rgba(0,0,0,.4)", borderRadius:24, padding:"36px 28px",
+          display:"flex", flexDirection:"column", alignItems:"center", gap:18,
+          maxWidth:560, width:"100%", animation:"slideIn .5s ease-out", boxSizing: "border-box" }}>
+          <div style={{ fontSize:48, animation:"pulse 1.5s ease-in-out infinite" }}>
+            {correctCount>=totalRounds?"🎉":correctCount>=totalRounds*.6?"😊":"😅"}
+          </div>
+          <Character
+            face={correctCount>=totalRounds?"love":correctCount>=totalRounds*.6?"happy":"sad"}
+            speech={correctCount>=totalRounds?"그대는 진정한 명의로다!":
+              correctCount>=totalRounds*.6?"제법이오! 더 정진하시오!":"아직 수련이 필요하오..."} />
+          <div style={{ background:"linear-gradient(135deg,rgba(255,215,0,.15),rgba(255,215,0,.04))",
+            borderRadius:16, padding:24, width:"100%", textAlign:"center",
+            border:"2px solid rgba(255,215,0,.25)", boxSizing: "border-box" }}>
+            <div style={{ color:"#FFD700", fontSize:16, fontWeight:700, marginBottom:8 }}>🏥 슈의 한약공장 - 최종 성적</div>
+            <div style={{ color:"white", fontSize:56, fontWeight:900 }}>{score}<span style={{fontSize:22}}>점</span></div>
+            <div style={{ color:"#aaa", fontSize:15, marginTop:5 }}>{correctCount}/{totalRounds} 정답 · 만점 {totalRounds*10}점 · [{selectedCategory}]</div>
+            <div style={{ marginTop:12, color:"#FFD700", fontSize:22, fontWeight:900 }}>
+              {correctCount>=totalRounds?"🏆 손사막도 울고 갈 명의 🏆":
+               correctCount>=totalRounds*.8?"⭐ 허준의 후예 ⭐":
+               correctCount>=totalRounds*.6?"✨ 장금이의 환생 ✨":
+               correctCount>=totalRounds*.4?"💊 동네 한의사 💊":
+               "🩹 돌팔이 🩹"}
+            </div>
+          </div>
+          <button className="ab" onClick={()=>setGameState("menu")}
+            style={{ background:"linear-gradient(135deg,#E65100,#BF360C)",
+              color:"white", border:"3px solid rgba(0,0,0,.2)", borderRadius:12,
+              padding:"16px 36px", fontSize:20, fontWeight:900, fontFamily:"inherit",
+              boxShadow:"0 4px 10px rgba(0,0,0,.3)", width:"100%" }}>
+            🔄 다시 도전하기
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}
+
+const root = ReactDOM.createRoot(document.getElementById('root'));
+root.render(<HerbalMedicineGame />);
+  </script>
+</body>
+</html>
